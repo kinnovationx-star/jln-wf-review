@@ -39,7 +39,10 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"H
 .clist .st{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:0 8px;align-self:start;white-space:nowrap}
 .clist .st.open{color:var(--warn);border-color:var(--warn)}.clist .st.done{color:var(--ok);border-color:var(--ok)}
 .clist img{grid-column:2;grid-row:2 / span 2;max-width:120px;max-height:80px;border:1px solid var(--line);border-radius:4px}
-@media (max-width:600px){.top h1{display:none}.top .plan-name{display:none}}
+.top .sm{display:none}
+@media (max-width:700px){.top{flex-wrap:nowrap;gap:6px}.top h1,.top .plan-name,.top .lg{display:none}.top .sm{display:inline}
+.plans button{padding:0 8px}.top select{flex:1;width:0}.top .help{margin-left:0;padding:0 10px;white-space:nowrap}
+.status{width:10px;height:10px;padding:0;overflow:hidden;text-indent:-999px;flex:none;border-width:5px}}
 button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offset:2px}
 </style>
 <style>html,body{margin:0}*,*::before,*::after{box-sizing:border-box}[hidden]{display:none!important}</style>
@@ -51,8 +54,8 @@ button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offs
   <span class="plan-name" id="plan-name"></span>
   <select id="page" aria-label="ページ"></select>
   <span class="status" id="status">準備中…</span>
-  <button class="help" type="button" id="list-btn">コメント一覧 <span id="list-count">0</span></button>
-  <button class="help" type="button" id="help" style="margin-left:0">見方・コメントの方法</button>
+  <button class="help" type="button" id="list-btn"><span class="lg">コメント</span>一覧 <span id="list-count">0</span></button>
+  <button class="help" type="button" id="help" style="margin-left:0" aria-label="見方・コメントの方法"><span class="lg">見方・コメントの方法</span><span class="sm">？</span></button>
 </header>
 <div class="stage">
   <iframe id="view" title="ワイヤーフレームの画面"></iframe>
