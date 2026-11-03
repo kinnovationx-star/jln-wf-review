@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<script src="config.js"></script>
+<title>JLN ワイヤーフレーム確認</title>
+<style>
+/* 確認用の外枠：上に案とページの切り替え、下に画面。色は未確定のWFに合わせてグレーだけ（明るい1テーマ） */
+:root{--bg:#f2f3f4;--fg:#1f2428;--sub:#5b6670;--line:#cdd3d8;--pri:#1f2428;--ok:#2e7d4f;--warn:#9a5b00;--bar:56px;color-scheme:light}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+.top{flex:none;background:#fff;border-bottom:1px solid var(--line);padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.top h1{font-size:14px;margin:0;font-weight:700;white-space:nowrap}
+.plans{display:flex;gap:4px}
+.plans button{font:inherit;font-size:13px;min-height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer;border-radius:6px}
+.plans button[aria-pressed="true"]{background:var(--pri);color:#fff;border-color:var(--pri)}
+.top select{font:inherit;font-size:13px;min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--fg);max-width:100%;min-width:0}
+.top .plan-name{font-size:12px;color:var(--sub)}
+.top .help{margin-left:auto;font:inherit;font-size:13px;min-height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:6px;cursor:pointer}
+.status{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--sub)}
+.status.ok{color:var(--ok);border-color:var(--ok)}.status.warn{color:var(--warn);border-color:var(--warn)}
+.stage{flex:1;min-height:0;position:relative}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.guide{position:absolute;inset:0;overflow:auto;background:var(--bg);padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.guide .in{max-width:720px;margin:0 auto}
+.guide h2{font-size:20px;margin:0 0 8px;text-wrap:balance}.guide h3{font-size:15px;margin:24px 0 6px}
+.guide p,.guide li{font-size:14px;line-height:1.8}
+.guide .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.guide .go{font:inherit;font-weight:700;min-height:44px;padding:0 20px;border:0;border-radius:6px;background:var(--pri);color:#fff;cursor:pointer;margin-top:12px}
+.guide kbd{font-family:ui-monospace,monospace;font-size:12px;background:#eceef0;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.guide .plans-list{display:grid;gap:8px;padding:0;list-style:none}
+.guide .plans-list li{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+#list-count{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--pri);color:#fff;font-size:11px;line-height:18px;text-align:center}
+.filters{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:8px 0 12px;font-size:13px}
+.filters label{display:flex;gap:6px;align-items:center;min-height:36px}
+.clist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.clist button{width:100%;text-align:left;font:inherit;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:4px 12px;color:var(--fg)}
+.clist .where{font-size:12px;color:var(--sub)}.clist .txt{grid-column:1;font-size:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+.clist .st{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:0 8px;align-self:start;white-space:nowrap}
+.clist .st.open{color:var(--warn);border-color:var(--warn)}.clist .st.done{color:var(--ok);border-color:var(--ok)}
+.clist img{grid-column:2;grid-row:2 / span 2;max-width:120px;max-height:80px;border:1px solid var(--line);border-radius:4px}
+@media (max-width:600px){.top h1{display:none}.top .plan-name{display:none}}
+button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offset:2px}
+</style>
+<style>html,body{margin:0}*,*::before,*::after{box-sizing:border-box}[hidden]{display:none!important}</style>
+</head><body>
+
+<header class="top">
+  <h1>ＪＬＮ合同会社 ワイヤーフレーム</h1>
+  <div class="plans" role="group" aria-label="案"></div>
+  <span class="plan-name" id="plan-name"></span>
+  <select id="page" aria-label="ページ"></select>
+  <span class="status" id="status">準備中…</span>
+  <button class="help" type="button" id="list-btn">コメント一覧 <span id="list-count">0</span></button>
+  <button class="help" type="button" id="help" style="margin-left:0">見方・コメントの方法</button>
+</header>
+<div class="stage">
+  <iframe id="view" title="ワイヤーフレームの画面"></iframe>
+  <section class="guide" id="list" hidden aria-label="全ページのコメント一覧">
+    <div class="in">
+      <h2>全ページのコメント一覧</h2>
+      <p class="list-note">A・B・C案、全ページのコメントです。行を押すと、そのページを開きます。</p>
+      <div class="filters" role="group" aria-label="絞り込み">
+        <label><input type="checkbox" id="f-open" checked> 未対応だけ</label>
+        <select id="f-plan" aria-label="案で絞り込み"><option value="">すべての案</option><option>A</option><option>B</option><option>C</option></select>
+      </div>
+      <ol class="clist" id="clist"></ol>
+      <p id="clist-empty" hidden>まだコメントはありません。</p>
+      <button class="go" type="button" id="list-close">画面に戻る</button>
+    </div>
+  </section>
+  <section class="guide" id="guide" hidden>
+    <div class="in">
+      <h2>ワイヤーフレーム（A・B・C案）ご確認のお願い</h2>
+      <p>ページの「配置」と「流れ」を決める設計図です。写真は灰色の斜線の枠（入れる写真の内容を書いています）、色や書体はまだ決めていません。文章は頂いた原稿のまま、順番も原稿どおりです。</p>
+      <ul class="plans-list" id="plans-list"></ul>
+      <h3>コメントの書き方（文字とスクショ）</h3>
+      <div class="card"><ol>
+        <li>画面右下の黒いバーで、名前が「お客様」になっていることを確かめます。</li>
+        <li>「コメントする」を押し、直してほしい場所をクリックします。</li>
+        <li>出てきた欄に、直してほしいことを書きます。</li>
+        <li>スクショは「スクショを添付」で画像を選ぶか、コピーした画像を欄の中で貼り付けます（Mac <kbd>⌘</kbd>+<kbd>V</kbd>、Windows <kbd>Ctrl</kbd>+<kbd>V</kbd>）。画面の一部のスクショは、Mac は <kbd>⌘</kbd>+<kbd>Control</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>、Windows は <kbd>Windows</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> で範囲を選ぶとコピーされます。</li>
+        <li>同じ直しをほかのページにも当てたいときは「反映する範囲」で選べます。</li>
+        <li>「保存」を押すと、その場所に番号のピンが付きます。</li>
+      </ol></div>
+      <h3>コメントの届け方</h3>
+      <div class="card" id="send-note"></div>
+      <h3>この画面について</h3>
+      <div class="card"><p>上の「A／B／C」で案を、右の一覧でページを切り替えられます。同じページのまま案だけを切り替えて比べられます。「お問い合わせ」のフォームは見本で、送信・保存はされません。黄色の「追加」の印は、原稿にない言葉（ボタン名など）で、まだ決まっていないものです。</p></div>
+      <button class="go" type="button" id="go">画面を見る</button>
+    </div>
+  </section>
+</div>
+<script>
+(function () {
+  'use strict';
+  var PAGES = [["index", "トップページ"], ["company", "事業部"], ["message", "トップメッセージ"], ["outline", "会社概要"], ["service", "サービス一覧"], ["service-ec", "EC事業（インターネットを利用した物品販売事業）"], ["service-ad", "インターネット広告事業"], ["service-media", "Webメディア・情報提供サービス事業"], ["service-sns", "SNSマーケティング事業"], ["service-accessory", "アクセサリー販売・輸出入事業"], ["service-goods", "生活雑貨・日用品販売・輸出入事業"], ["service-food", "食品・清涼飲料水販売・輸出入事業"], ["recruit", "採用情報"], ["contact", "お問い合わせ"], ["thanks", "送信完了【追加】"], ["privacy", "プライバシーポリシー"]];
+  var PLANS = {"A": {"name": "見本準拠・コーポレート型", "idea": "見本サイト（pri-management.com）に近い、きちんとした会社の見せ方。大きな画像の上に見出しを重ねたFV、大きな画像と文章を左右に並べる（左右交互）。7事業は写真つきのカード。"}, "B": {"name": "エディトリアル・大判画像型", "idea": "雑誌のように、幅いっぱいの大判画像を主役にし、見出しと導入のカードを画像に重ねる。7事業は1枚目を大きくしたタイルで写真に名前を重ねる。スマホは画面下に問い合わせボタンを固定。"}, "C": {"name": "フルスクリーン没入型", "idea": "FVは画面いっぱいの画像の中に見出しとボタン。各セクションも画面幅いっぱいの画像の中に見出しを入れ、7事業は画面の端まで届く写真と文章を左右交互に。ヘッダーに常に問い合わせボタン。"}};
+  var STAGE = '05-wireframe';
+  var LKEY = 'jln-wf-comments';
+  var view = document.getElementById('view'), sel = document.getElementById('page');
+  var plansBox = document.querySelector('.plans'), statusEl = document.getElementById('status');
+  var guide = document.getElementById('guide');
+  var cur = { plan: 'A', page: 'index' };
+
+  // ---- 保存先：Artifactの db（共有）。使えないときはこのブラウザ
+  var all = {};            // id -> コメント（page を含む）
+  var listeners = [];
+  var db = null, downloads = null, ready = false, readyWait = [];
+  function lget() { try { return JSON.parse(localStorage.getItem(LKEY) || '{}') || {}; } catch (e) { return {}; } }
+  function lset() { try { localStorage.setItem(LKEY, JSON.stringify(all)); return true; } catch (e) { return false; } }
+  function setReady() { if (ready) return; ready = true; readyWait.splice(0).forEach(function (f) { f(); }); renderList(); }
+  function whenReady() { return new Promise(function (res) { ready ? res() : readyWait.push(res); }); }
+  function setStatus(kind, text) { statusEl.className = 'status ' + kind; statusEl.textContent = text; renderSendNote(); }
+  function parts(p) { var x = p.split('/'); return { stage: x[0], plan: x.length >= 3 ? x[1] : '', name: x[x.length - 1] }; }
+  function applies(scope, src, page) {
+    if (src === page || !scope || scope === 'page') return false;
+    var a = parts(src), b = parts(page);
+    if (a.stage !== b.stage) return false;
+    if (scope === 'all') return true;
+    if (scope === 'plan') return a.plan === b.plan;
+    return a.name === b.name;
+  }
+  function strip(c) { var o = {}; Object.keys(c).forEach(function (k) { if (k !== 'page') o[k] = c[k]; }); return o; }
+  function forPage(page) {
+    var mine = [], shared = [];
+    Object.keys(all).forEach(function (id) {
+      var c = all[id];
+      if (c.page === page) mine.push(strip(c));
+      else if (applies(c.scope, c.page, page)) { var s = strip(c); s.source = c.page; shared.push(s); }
+    });
+    mine.sort(function (a, b) { return (a.n || 0) - (b.n || 0); });
+    return { comments: mine, shared: shared };
+  }
+  function notify() { listeners.forEach(function (l) { try { l.fn(forPage(l.page)); } catch (e) {} }); renderList(); }
+  var WHO = { hirano: '平野', client: 'お客様', other: 'その他' };
+  var SCOPE = { page: '', plan: '（この案の全ページ）', same: '（全案のこのページ）', all: '（全案・全ページ）' };
+  function pageName(k) { for (var i = 0; i < PAGES.length; i++) if (PAGES[i][0] === k) return PAGES[i][1]; return k; }
+  function renderList() {
+    var ol = document.getElementById('clist'); if (!ol) return;
+    var onlyOpen = document.getElementById('f-open').checked, plan = document.getElementById('f-plan').value;
+    var items = Object.keys(all).map(function (id) { return all[id]; });
+    document.getElementById('list-count').textContent = items.filter(function (c) { return c.status !== 'done'; }).length;
+    items = items.filter(function (c) { var p = parts(c.page); return (!onlyOpen || c.status !== 'done') && (!plan || p.plan === plan); });
+    items.sort(function (a, b) { return String(b.created || '').localeCompare(String(a.created || '')); });
+    ol.textContent = '';
+    items.forEach(function (c) {
+      var p = parts(c.page);
+      var li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button';
+      var w = document.createElement('span'); w.className = 'where';
+      w.textContent = p.plan + '案 ／ ' + pageName(p.name) + ' ／ #' + c.n + ' ' + (WHO[c.who] || '') + (SCOPE[c.scope] || '') + (c.created ? ' ／ ' + String(c.created).slice(0, 10) : '');
+      var st = document.createElement('span'); st.className = 'st ' + (c.status === 'done' ? 'done' : 'open'); st.textContent = c.status === 'done' ? '対応済み' : '未対応';
+      var t = document.createElement('span'); t.className = 'txt'; t.textContent = c.text;
+      b.appendChild(w); b.appendChild(st); b.appendChild(t);
+      if (c.img) { var im = document.createElement('img'); im.src = c.img; im.alt = 'スクショ'; b.appendChild(im); }
+      b.addEventListener('click', function () { document.getElementById('list').hidden = true; go(p.plan, p.name); });
+      li.appendChild(b); ol.appendChild(li);
+    });
+    document.getElementById('clist-empty').hidden = items.length > 0;
+  }
+
+  window.WFBridge = {
+    load: function (page) { return whenReady().then(function () { return forPage(page); }); },
+    onChange: function (page, fn) { listeners = listeners.filter(function (l) { return l.page !== page; }); listeners.push({ page: page, fn: fn }); },
+    shared: function () { return !!db; },
+    save: function (page, comments, gone) {
+      var jobs = [];
+      comments.forEach(function (c) {
+        var row = Object.assign({}, c, { page: page }); delete row.source;
+        var before = all[c.id];
+        if (before && JSON.stringify(before) === JSON.stringify(row)) return;
+        all[c.id] = row;
+        if (db) jobs.push(db.collection('comments').doc(c.id).set(row));
+      });
+      gone.forEach(function (id) { delete all[id]; if (db) jobs.push(db.collection('comments').doc(id).delete()); });
+      if (!db && !lset()) return Promise.reject(new Error('full'));
+      notify();
+      return Promise.all(jobs).then(function () { return forPage(page); });
+    },
+    exportAll: function () {
+      var by = {};
+      Object.keys(all).forEach(function (id) { var c = all[id]; (by[c.page] = by[c.page] || []).push(strip(c)); });
+      var pages = Object.keys(by).map(function (p) { return { page: p, comments: by[p] }; });
+      var n = Object.keys(all).length;
+      var data = JSON.stringify({ exported: new Date().toISOString(), pages: pages }, null, 2);
+      var name = 'comments-all-' + new Date().toISOString().slice(0, 10) + '.json';
+      if (!downloads) return Promise.resolve('この画面では保存できません（コメントは共有されています）');
+      return downloads.save({ filename: name, data: new Blob([data], { type: 'application/json' }) })
+        .then(function () { return pages.length + 'ページ・' + n + '件を保存しました'; },
+              function () { return '保存しませんでした'; });
+    }
+  };
+
+
+  // ---- 保存先：Google スプレッドシート（config.js の WF_ENDPOINT）。未設定・つながらないときはこのブラウザ
+  var EP = (window.WF_ENDPOINT || '').trim();
+  db = null;
+  function pull() {
+    return fetch(EP, { method: 'GET', redirect: 'follow' }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) throw new Error('bad');
+      var next = {};
+      (d.comments || []).forEach(function (c) { if (c && c.id && c.page) next[c.id] = c; });
+      all = next;
+    });
+  }
+  function post(items, gone) {
+    return fetch(EP, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ items: items, deleted: gone }) }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) throw new Error((d && d.error) || 'bad');
+      (d.saved || []).forEach(function (c) { all[c.id] = c; });
+    });
+  }
+  var online = false;
+  if (EP) {
+    pull().then(function () { online = true; setStatus('ok', 'コメントは平野に届きます'); setReady(); },
+                function () { all = lget(); setStatus('warn', 'つながりません：このブラウザに保存中'); setReady(); });
+    setInterval(function () { if (online && !document.hidden) pull().then(notify, function () {}); }, 30000);
+  } else { all = lget(); setStatus('warn', 'このブラウザに保存中'); setReady(); }
+
+  window.WFBridge.shared = function () { return online; };
+  window.WFBridge.save = function (page, comments, gone) {
+    var items = [];
+    comments.forEach(function (c) {
+      var row = Object.assign({}, c, { page: page }); delete row.source;
+      var before = all[c.id];
+      if (before && JSON.stringify(before) === JSON.stringify(row)) return;
+      all[c.id] = row; items.push(row);
+    });
+    gone.forEach(function (id) { delete all[id]; });
+    notify();
+    if (!online) { return lset() ? Promise.resolve(forPage(page)) : Promise.reject(new Error('full')); }
+    if (!items.length && !gone.length) return Promise.resolve(forPage(page));
+    return post(items, gone).then(function () { notify(); return forPage(page); });
+  };
+  window.WFBridge.exportAll = function () {
+    var by = {};
+    Object.keys(all).forEach(function (id) { var c = all[id]; (by[c.page] = by[c.page] || []).push(strip(c)); });
+    var pages = Object.keys(by).map(function (p) { return { page: p, comments: by[p] }; });
+    var data = JSON.stringify({ exported: new Date().toISOString(), pages: pages }, null, 2);
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = 'comments-all-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    return Promise.resolve(pages.length + 'ページ・' + Object.keys(all).length + '件を保存しました');
+  };
+  function renderSendNote() {
+    var box = document.getElementById('send-note');
+    box.textContent = '';
+    var p = document.createElement('p');
+    p.textContent = window.WFBridge.shared()
+      ? 'コメントは保存した時点で自動で共有され、平野にも届きます。ファイルを送る必要はありません。'
+      : 'この画面ではコメントがお使いのブラウザに保存されます。見終わったら右下の「書き出す」→「全ページのコメントをまとめて保存」を押し、保存されたファイルを平野までお送りください。';
+    box.appendChild(p);
+  }
+
+  // ---- 案とページの切り替え
+  Object.keys(PLANS).forEach(function (v) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = v + '案'; b.dataset.plan = v;
+    b.addEventListener('click', function () { go(v, cur.page); });
+    plansBox.appendChild(b);
+    var li = document.createElement('li');
+    var strong = document.createElement('strong'); strong.textContent = v + '案　' + PLANS[v].name;
+    li.appendChild(strong); li.appendChild(document.createTextNode('：' + PLANS[v].idea));
+    document.getElementById('plans-list').appendChild(li);
+  });
+  PAGES.forEach(function (p) { var o = document.createElement('option'); o.value = p[0]; o.textContent = p[1]; sel.appendChild(o); });
+  sel.addEventListener('change', function () { go(cur.plan, sel.value); });
+
+  function syncUi() {
+    plansBox.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.plan === cur.plan)); });
+    sel.value = cur.page;
+    document.getElementById('plan-name').textContent = PLANS[cur.plan] ? PLANS[cur.plan].name : '';
+    try { history.replaceState(null, '', '#' + cur.plan + '-' + cur.page); } catch (e) {}
+  }
+  function go(plan, page) {
+    cur = { plan: plan, page: page };
+    guide.hidden = true; document.getElementById('list').hidden = true;
+    syncUi();
+    view.src = plan + '/' + page + '.html';
+  }
+
+  // 画面が読み込まれたら：WFの上の帯を隠し、ポインターを差し込み、中でのページ移動を外枠に合わせる
+  view.addEventListener('load', function () {
+    var d; try { d = view.contentDocument; } catch (e) { return; }
+    if (!d || !d.body) return;
+    var m = (view.contentWindow.location.pathname || '').match(/([ABC])\/([\w-]+)\.html$/);
+    if (m) { cur = { plan: m[1], page: m[2] }; syncUi(); }
+    var st = d.createElement('style'); st.textContent = '.wf-bar{display:none!important}'; d.head.appendChild(st);
+    d.querySelectorAll('a[href="../index.html"]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); showGuide(); }); });
+    var s = d.createElement('script');
+    s.src = '../pointer.js';
+    s.dataset.page = STAGE + '/' + cur.plan + '/' + cur.page;
+    s.dataset.mode = 'bridge';
+    d.body.appendChild(s);
+  });
+
+  function showGuide() { document.getElementById('list').hidden = true; guide.hidden = false; }
+  var listEl = document.getElementById('list');
+  document.getElementById('list-btn').addEventListener('click', function () { guide.hidden = true; listEl.hidden = !listEl.hidden; renderList(); });
+  document.getElementById('list-close').addEventListener('click', function () { listEl.hidden = true; });
+  document.getElementById('f-open').addEventListener('change', renderList);
+  document.getElementById('f-plan').addEventListener('change', renderList);
+  document.getElementById('help').addEventListener('click', function () { guide.hidden = !guide.hidden; });
+  document.getElementById('go').addEventListener('click', function () { guide.hidden = true; });
+
+  var h = (location.hash || '').slice(1).match(/^([ABC])-([\w-]+)$/);
+  if (h && PAGES.some(function (p) { return p[0] === h[2]; })) { go(h[1], h[2]); }
+  else { go('A', 'index'); showGuide(); }
+})();
+</script>
+
+</body></html>
