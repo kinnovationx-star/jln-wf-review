@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<script src="config.js?v=1793727303"></script>
+<script src="config.js?v=1793727884"></script>
 <title>JLN ワイヤーフレーム確認</title>
 <style>
 /* 確認用の外枠：上に案とページの切り替え、下に画面。色は未確定のWFに合わせてグレーだけ（明るい1テーマ） */
@@ -196,45 +196,75 @@ button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offs
   };
 
 
-  // ---- 保存先：Google スプレッドシート（config.js の WF_ENDPOINT）。未設定・つながらないときはこのブラウザ
+  // ---- 保存先：Google スプレッドシート（config.js の WF_ENDPOINT）
+  // 受け口の応答は数秒〜10秒かかるため、前回読んだコメントをすぐ出し、送信中のコメントは読み直しで消さない
   var EP = (window.WF_ENDPOINT || '').trim();
+  var CKEY = 'jln-wf-cache', PKEY = 'jln-wf-pending';
   db = null;
+  function jget(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
+  function jset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  var pending = jget(PKEY);  // id -> 送るコメント（null は削除）
+  function applyPending(base) {
+    Object.keys(pending).forEach(function (id) { if (pending[id] === null) delete base[id]; else base[id] = pending[id]; });
+    return base;
+  }
+  var online = false, busy = false;
+  function label() {
+    var n = Object.keys(pending).length;
+    if (!EP) setStatus('warn', 'このブラウザに保存中');
+    else if (n) setStatus('warn', '送信中…（' + n + '件）');
+    else if (online) setStatus('ok', 'コメントは平野に届きます');
+    else setStatus('warn', '読み込み中…');
+  }
   function pull() {
-    return fetch(EP, { method: 'GET', redirect: 'follow' }).then(function (r) { return r.json(); }).then(function (d) {
+    return fetch(EP, { method: 'GET', redirect: 'follow', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) throw new Error('bad');
       var next = {};
       (d.comments || []).forEach(function (c) { if (c && c.id && c.page) next[c.id] = c; });
-      all = next;
+      jset(CKEY, next);
+      all = applyPending(next);
+      online = true;
     });
   }
-  function post(items, gone) {
+  function flush() {
+    var ids = Object.keys(pending);
+    if (!EP || busy || !ids.length) return Promise.resolve();
+    busy = true;
+    var items = [], gone = [];
+    ids.forEach(function (id) { if (pending[id] === null) gone.push(id); else items.push(pending[id]); });
+    var sent = {}; ids.forEach(function (id) { sent[id] = JSON.stringify(pending[id]); });
     return fetch(EP, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ items: items, deleted: gone }) }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) throw new Error((d && d.error) || 'bad');
-      (d.saved || []).forEach(function (c) { all[c.id] = c; });
-    });
+      // 送ったあとに変わっていないものだけ「送信済み」にする
+      ids.forEach(function (id) { if (JSON.stringify(pending[id]) === sent[id]) delete pending[id]; });
+      (d.saved || []).forEach(function (c) { if (!pending[c.id]) all[c.id] = c; });
+      jset(PKEY, pending); online = true;
+    }).catch(function () {}).then(function () { busy = false; label(); notify(); });
   }
-  var online = false;
   if (EP) {
-    pull().then(function () { online = true; setStatus('ok', 'コメントは平野に届きます'); setReady(); },
-                function () { all = lget(); setStatus('warn', 'つながりません：このブラウザに保存中'); setReady(); });
-    setInterval(function () { if (online && !document.hidden) pull().then(notify, function () {}); }, 30000);
-  } else { all = lget(); setStatus('warn', 'このブラウザに保存中'); setReady(); }
+    all = applyPending(jget(CKEY));
+    label(); setReady();
+    pull().then(function () { label(); notify(); return flush(); }, function () { label(); });
+    setInterval(function () {
+      if (document.hidden) return;
+      flush().then(function () { return busy ? null : pull(); }).then(function () { label(); notify(); }, function () {});
+    }, 20000);
+  } else { all = lget(); label(); setReady(); }
 
-  window.WFBridge.shared = function () { return online; };
+  window.WFBridge.shared = function () { return !!EP; };
   window.WFBridge.save = function (page, comments, gone) {
-    var items = [];
     comments.forEach(function (c) {
       var row = Object.assign({}, c, { page: page }); delete row.source;
       var before = all[c.id];
       if (before && JSON.stringify(before) === JSON.stringify(row)) return;
-      all[c.id] = row; items.push(row);
+      all[c.id] = row; pending[c.id] = row;
     });
-    gone.forEach(function (id) { delete all[id]; });
-    notify();
-    if (!online) { return lset() ? Promise.resolve(forPage(page)) : Promise.reject(new Error('full')); }
-    if (!items.length && !gone.length) return Promise.resolve(forPage(page));
-    return post(items, gone).then(function () { notify(); return forPage(page); });
+    gone.forEach(function (id) { delete all[id]; pending[id] = null; });
+    if (!EP) { pending = {}; return lset() ? Promise.resolve(forPage(page)) : Promise.reject(new Error('full')); }
+    jset(PKEY, pending); label(); notify();
+    flush();
+    return Promise.resolve(forPage(page));
   };
   window.WFBridge.exportAll = function () {
     var by = {};
