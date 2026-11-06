@@ -267,15 +267,15 @@ button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offs
     return Promise.resolve(forPage(page));
   };
   window.WFBridge.exportAll = function () {
-    var by = {};
-    Object.keys(all).forEach(function (id) { var c = all[id]; (by[c.page] = by[c.page] || []).push(strip(c)); });
+    var by = {}, count = 0;
+    Object.keys(all).forEach(function (id) { var c = all[id]; if (parts(c.page).stage !== STAGE) return; count++; (by[c.page] = by[c.page] || []).push(strip(c)); });
     var pages = Object.keys(by).map(function (p) { return { page: p, comments: by[p] }; });
     var data = JSON.stringify({ exported: new Date().toISOString(), pages: pages }, null, 2);
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     a.download = 'comments-all-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
-    return Promise.resolve(pages.length + 'ページ・' + Object.keys(all).length + '件を保存しました');
+    return Promise.resolve(pages.length + 'ページ・' + count + '件を保存しました');
   };
   function renderSendNote() {
     var box = document.getElementById('send-note');

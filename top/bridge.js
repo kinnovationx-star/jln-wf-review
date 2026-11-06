@@ -8,6 +8,7 @@
   function jget(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
   function jset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var pending = jget(PKEY), all = {}, listeners = [], online = false, busy = false;
+  var recent = {};  // 送ったばかりの変更。遅れて届いた古い読み込みで戻さない（60秒）
   function parts(p) { var x = String(p).split('/'); return { stage: x[0], plan: x.length >= 3 ? x[1] : '', name: x[x.length - 1] }; }
   function applies(scope, src, page) {
     if (src === page || !scope || scope === 'page') return false;
@@ -52,6 +53,10 @@
       if (!d || !d.ok) throw new Error('bad');
       var next = {};
       (d.comments || []).forEach(function (c) { if (c && c.id && c.page) next[c.id] = c; });
+      Object.keys(recent).forEach(function (id) {
+        if (Date.now() - recent[id].t > 60000) { delete recent[id]; return; }
+        if (recent[id].row) next[id] = recent[id].row; else delete next[id];
+      });
       jset(CKEY, next);
       all = applyPending(next);
       online = true;
@@ -66,7 +71,7 @@
     return fetch(EP, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ items: items, deleted: gone }) })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.ok) throw new Error((d && d.error) || 'bad');
-        ids.forEach(function (id) { if (JSON.stringify(pending[id]) === sent[id]) delete pending[id]; });
+        ids.forEach(function (id) { if (JSON.stringify(pending[id]) === sent[id]) { recent[id] = { t: Date.now(), row: pending[id] }; delete pending[id]; } });
         (d.saved || []).forEach(function (c) { if (!pending[c.id]) all[c.id] = c; });
         jset(PKEY, pending); online = true;
       }).catch(function () {}).then(function () { busy = false; notify(); });

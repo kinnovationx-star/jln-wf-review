@@ -5,6 +5,7 @@
   var me = document.currentScript;
   var PAGE = (me && me.dataset.page) || location.pathname;
   var MODE = (me && me.dataset.mode) || 'offline';
+  var FOLD = !!(me && me.dataset.fold);  // 公開のTOP案：ふだんは小さく畳み、ページのリンクを隠さない
   var BRIDGE = MODE === 'bridge' ? window.parent && window.parent.WFBridge : null;  // 公開ページの外枠が保存を受け持つ
   if (MODE === 'bridge' && !BRIDGE) MODE = 'offline';
   var KEY = 'ai-site-kit-pointer:' + PAGE;
@@ -51,7 +52,10 @@
     'border:1px solid #c9d1d6;border-radius:10px;padding:12px;font:13px/1.5 "Hiragino Sans","Yu Gothic",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2)}' +
     '.__ptr-panel ol{margin:0;padding-left:1.4em}.__ptr-panel li{margin:6px 0;cursor:pointer}' +
     '.__ptr-panel textarea{width:100%;box-sizing:border-box;min-height:160px;font:12px monospace}' +
-    'body.__ptr-adding,body.__ptr-adding *{cursor:crosshair!important}';
+    'body.__ptr-adding,body.__ptr-adding *{cursor:crosshair!important}' +
+    (FOLD ? '#__ptr-bar{left:12px;right:auto;padding:5px}#__ptr-bar button,#__ptr-bar select{min-height:44px}' +
+    '#__ptr-bar.fold>*:not(.__ptr-tog),#__ptr-bar.pick>*:not(.__ptr-add){display:none}' +
+    'body:has(.drawer:not([hidden])) #__ptr-bar{display:none}body{padding-bottom:64px}' : '');
   document.head.appendChild(el('style', null, css));
 
   var layer = el('div', { id: '__ptr-layer', 'aria-hidden': 'true' });
@@ -65,6 +69,14 @@
   var outBtn = el('button', { type: 'button' }, '書き出す');
   var count = el('span', null, '');
   [whoSel, addBtn, listBtn, outBtn, count].forEach(function (x) { bar.appendChild(x); });
+  var togBtn = null;
+  if (FOLD) {
+    togBtn = el('button', { type: 'button', class: '__ptr-tog' }, 'コメント');
+    addBtn.classList.add('__ptr-add');
+    bar.insertBefore(togBtn, bar.firstChild);
+    bar.classList.add('fold');
+    togBtn.addEventListener('click', function () { bar.classList.toggle('fold'); closeBoxes(); render(); });
+  }
 
   function ours(t) { return t && t.closest && (t.closest('#__ptr-bar') || t.closest('.__ptr-box') || t.closest('.__ptr-panel') || t.closest('.__ptr-pin')); }
   function closeBoxes() { document.querySelectorAll('.__ptr-box,.__ptr-panel').forEach(function (b) { b.remove(); }); }
@@ -125,6 +137,8 @@
   }
 
   function position(c) {
+    // 公開のTOP案は固定や視差で要素の位置が変わるので、同じ幅なら押した場所をそのまま使う
+    if (FOLD && !c.source && c.vw === innerWidth && typeof c.px === 'number') return { x: c.px, y: c.py };
     var t = null;
     try { t = document.querySelector(c.selector); } catch (e) { t = null; }
     if (t) {
@@ -156,6 +170,7 @@
     });
     var open = comments.filter(function (c) { return c.status !== 'done'; }).length;
     count.textContent = 'コメント ' + comments.length + '件（未対応 ' + open + '）' + (shared.length ? '・一括 ' + shared.length + '件' : '');
+    if (togBtn) togBtn.textContent = bar.classList.contains('fold') ? 'コメント' + (open ? '（' + open + '）' : '') : 'たたむ';
   }
 
   function boxAt(x, y) {
@@ -220,7 +235,7 @@
     if (c.img) b.appendChild(shotEl(c.img));
     b.appendChild(el('p', { style: 'margin:0;font-size:12px;color:#6b4fa3' }, '反映する範囲：' + SCOPE[c.scope] + '／打ったページ：' + c.source));
     var row = el('div', { class: 'row' });
-    var go = el('a', { href: '/review/' + c.source + '.html' }, '打ったページを開く');
+    var go = el('a', { href: FOLD ? '../pattern-' + encodeURIComponent(String(c.source).split('/')[1]) + '/index.html' : '/review/' + c.source + '.html' }, '打ったページを開く');
     var close = el('button', { type: 'button', class: 'main' }, '閉じる');
     close.onclick = closeBoxes;
     row.appendChild(go); row.appendChild(close); b.appendChild(row);
@@ -286,7 +301,8 @@
   function setAdding(on) {
     adding = on;
     addBtn.classList.toggle('on', on);
-    addBtn.textContent = on ? 'コメントする場所をクリック（終了）' : 'コメントする';
+    addBtn.textContent = on ? (FOLD ? '場所を押す（終了）' : 'コメントする場所をクリック（終了）') : 'コメントする';
+    if (FOLD) { bar.classList.toggle('pick', on); if (!on) { bar.classList.add('fold'); render(); } }
     document.body.classList.toggle('__ptr-adding', on);
   }
 
