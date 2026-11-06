@@ -27,7 +27,7 @@ img{display:block;width:100%;aspect-ratio:8/5;object-fit:cover;background:#ddd}
 </style>
 <section class="c" aria-labelledby="ch"><h2 id="ch">コメント一覧（未対応 <span id="cn">0</span>件）</h2>
 <label><input type="checkbox" id="co" checked>未対応だけ表示</label>
-<ol id="cl"></ol><p id="ce">コメントはまだありません。各案を開き、右下の「コメントする」から画面の場所を押して書けます。</p></section>
+<ol id="cl"></ol><p id="ce">コメントはまだありません。各案を開き、左下の「コメント」、「コメントする」の順に押してから、画面の場所を押すと書けます。</p></section>
 <script>
 (function(){var W={hirano:'平野',client:'お客様',other:'その他'},last={};
 function draw(all){last=all;var ol=document.getElementById('cl'),co=document.getElementById('co').checked;
@@ -41,5 +41,5 @@ t.className='tx';t.textContent=c.text||'';a.appendChild(w);a.appendChild(t);li.a
 document.getElementById('ce').hidden=it.length>0}
 window.WFTopList=draw;document.getElementById('co').addEventListener('change',function(){draw(last)})})();
 </script>
-<script src="../config.js"></script><script src="bridge.js?v=2"></script><script src="visit.js?v=1" data-page="06-top/list"></script>
+<script src="../config.js"></script><script src="bridge.js?v=3"></script><script src="visit.js?v=2" data-page="06-top/list"></script>
 </body></html>

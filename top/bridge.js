@@ -71,7 +71,14 @@
     return fetch(EP, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ items: items, deleted: gone }) })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.ok) throw new Error((d && d.error) || 'bad');
-        ids.forEach(function (id) { if (JSON.stringify(pending[id]) === sent[id]) { recent[id] = { t: Date.now(), row: pending[id] }; delete pending[id]; } });
+        var cache = jget(CKEY);  // 送信直後に開き直しても、読み込みが終わるまで印を消さない
+        ids.forEach(function (id) {
+          if (JSON.stringify(pending[id]) !== sent[id]) return;
+          if (pending[id]) cache[id] = pending[id]; else delete cache[id];
+          recent[id] = { t: Date.now(), row: pending[id] };
+          delete pending[id];
+        });
+        jset(CKEY, cache);
         (d.saved || []).forEach(function (c) { if (!pending[c.id]) all[c.id] = c; });
         jset(PKEY, pending); online = true;
       }).catch(function () {}).then(function () { busy = false; notify(); });

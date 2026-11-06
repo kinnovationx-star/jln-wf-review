@@ -28,8 +28,10 @@
     id = id.slice(0, 8);
     set(ID_KEY, id);
   }
-  var side = Math.min(window.innerWidth, window.innerHeight);  // 横向きのスマホをタブレットに数えない
-  var device = side < 600 ? 'スマホ' : window.innerWidth < 1200 ? 'タブレット' : 'PC';
+  // 横向きのスマホをタブレットに、高さの低いPCの窓をスマホに数えない
+  var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  var phone = window.innerWidth < 768 || (coarse && window.innerHeight < 600);
+  var device = phone ? 'スマホ' : window.innerWidth < 1200 ? 'タブレット' : 'PC';
   try {
     fetch(EP, {
       method: 'POST', mode: 'no-cors', keepalive: true,
