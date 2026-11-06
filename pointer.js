@@ -11,7 +11,7 @@
   var WHO_KEY = 'ai-site-kit-pointer:who';
   var WHO = { hirano: '平野', client: 'お客様', other: 'その他' };
   var COLOR = { hirano: '#c46a12', client: '#2e8a57', other: '#2f6fb3' };
-  var SCOPE = { page: 'このページだけ', plan: 'この案の全ページ（同じ場所）', same: '全案のこのページ（A・B・C）', all: '全案・全ページ（同じ場所）' };
+  var SCOPE = { page: 'このページだけ', plan: 'この案の全ページ（同じ場所）', same: '全案のこのページ', all: '全案・全ページ（同じ場所）' };
   var comments = [];
   var shared = [];  // ほかのページで一括にしたコメント（このページにも当たるもの。読むだけ）
   var deleted = [];

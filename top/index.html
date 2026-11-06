@@ -18,4 +18,28 @@ img{display:block;width:100%;aspect-ratio:8/5;object-fit:cover;background:#ddd}
 <header><h1>ＪＬＮ合同会社 TOPデザイン5案</h1><p>タップすると開きます。スクロールすると動きが見られます。戻るときはブラウザの戻るを使ってください。写真は仮の画像です。</p></header>
 <ul><li><a href="pattern-1/index.html"><img src="thumbs/fv1.jpg" alt="案1の最初の画面"><div class="t"><span>案1</span>濃い青と斜めの切れ</div></a></li><li><a href="pattern-2/index.html"><img src="thumbs/fv2.jpg" alt="案2の最初の画面"><div class="t"><span>案2</span>大きな文字と青の面</div></a></li><li><a href="pattern-3/index.html"><img src="thumbs/fv3.jpg" alt="案3の最初の画面"><div class="t"><span>案3</span>積み重なる事業</div></a></li><li><a href="pattern-4/index.html"><img src="thumbs/fv4.jpg" alt="案4の最初の画面"><div class="t"><span>案4</span>斜めに走る赤</div></a></li><li><a href="pattern-5/index.html"><img src="thumbs/fv5.jpg" alt="案5の最初の画面"><div class="t"><span>案5</span>澄んだ青のグラデーション</div></a></li></ul>
 </div>
+<style>
+.c{max-width:1100px;margin:28px auto 0}.c h2{margin:0 0 8px;font-size:18px}
+.c ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.c li a{display:block;padding:10px 12px;font-size:14px;line-height:1.6;border-radius:6px}
+.c .wh{display:block;font-size:12px;color:var(--mut)}.c .dn{opacity:.55}.c .tx{white-space:pre-wrap;overflow-wrap:anywhere}
+.c label{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px}
+</style>
+<section class="c" aria-labelledby="ch"><h2 id="ch">コメント一覧（未対応 <span id="cn">0</span>件）</h2>
+<label><input type="checkbox" id="co" checked>未対応だけ表示</label>
+<ol id="cl"></ol><p id="ce">コメントはまだありません。各案を開き、右下の「コメントする」から画面の場所を押して書けます。</p></section>
+<script>
+(function(){var W={hirano:'平野',client:'お客様',other:'その他'},last={};
+function draw(all){last=all;var ol=document.getElementById('cl'),co=document.getElementById('co').checked;
+var it=Object.keys(all).map(function(k){return all[k]}).filter(function(c){return String(c.page).indexOf('06-top/')===0});
+document.getElementById('cn').textContent=it.filter(function(c){return c.status!=='done'}).length;
+it=it.filter(function(c){return !co||c.status!=='done'}).sort(function(a,b){return String(b.created||'').localeCompare(String(a.created||''))});
+ol.textContent='';it.forEach(function(c){var n=String(c.page).split('/')[1],li=document.createElement('li'),a=document.createElement('a'),w=document.createElement('span'),t=document.createElement('span');
+a.href='pattern-'+encodeURIComponent(n)+'/index.html';if(c.status==='done')a.className='dn';
+w.className='wh';w.textContent='案'+n+' ／ #'+c.n+' '+(W[c.who]||'')+(c.status==='done'?' ／ 対応済み':' ／ 未対応')+(c.created?' ／ '+new Date(c.created).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'');
+t.className='tx';t.textContent=c.text||'';a.appendChild(w);a.appendChild(t);li.appendChild(a);ol.appendChild(li)});
+document.getElementById('ce').hidden=it.length>0}
+window.WFTopList=draw;document.getElementById('co').addEventListener('change',function(){draw(last)})})();
+</script>
+<script src="../config.js"></script><script src="bridge.js"></script>
 </body></html>

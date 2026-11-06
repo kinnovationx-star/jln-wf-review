@@ -142,7 +142,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2f6fb3;outline-offs
   function renderList() {
     var ol = document.getElementById('clist'); if (!ol) return;
     var onlyOpen = document.getElementById('f-open').checked, plan = document.getElementById('f-plan').value;
-    var items = Object.keys(all).map(function (id) { return all[id]; });
+    var items = Object.keys(all).map(function (id) { return all[id]; }).filter(function (c) { return parts(c.page).stage === STAGE; });
     document.getElementById('list-count').textContent = items.filter(function (c) { return c.status !== 'done'; }).length;
     items = items.filter(function (c) { var p = parts(c.page); return (!onlyOpen || c.status !== 'done') && (!plan || p.plan === plan); });
     items.sort(function (a, b) { return String(b.created || '').localeCompare(String(a.created || '')); });
